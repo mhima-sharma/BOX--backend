@@ -2,10 +2,62 @@ const db = require('../config/db');
 const cloudinary = require('../config/cloudinary');
 
 // ✅ Create product — includes logged-in user
+// exports.createProduct = async (req, res) => {
+//   try {
+//     const { title, quantity, price, description } = req.body;
+//     const userId = req.user.id; // 👈 Requires auth middleware
+
+//     if (!req.files || req.files.length === 0) {
+//       return res.status(400).json({ message: 'At least one image is required' });
+//     }
+
+//     const uploadPromises = req.files.map(file => {
+//       return new Promise((resolve, reject) => {
+//         const ext = file.originalname.split('.').pop();
+//         const publicId = `product-${Date.now()}-${Math.floor(Math.random() * 10000)}.${ext}`;
+
+//         const stream = cloudinary.uploader.upload_stream(
+//           {
+//             folder: 'products',
+//             public_id: publicId,
+//             resource_type: 'image'
+//           },
+//           (err, result) => {
+//             if (err) reject(err);
+//             else resolve(result.secure_url);
+//           }
+//         );
+
+//         stream.end(file.buffer);
+//       });
+//     });
+
+//     const imageUrls = await Promise.all(uploadPromises);
+//     const imageUrlString = imageUrls.join(',');
+
+//     const sql = `
+//       INSERT INTO products (title, quantity, price, description, images, user_id)
+//       VALUES (?, ?, ?, ?, ?, ?)
+//     `;
+
+//     const [result] = await db.query(sql, [title, quantity, price, description, imageUrlString, userId]);
+
+//     return res.status(201).json({
+//       message: 'Product created successfully',
+//       productId: result.insertId,
+//       imageUrls
+//     });
+
+//   } catch (error) {
+//     console.error('Error creating product:', error);
+//     return res.status(500).json({ message: 'Internal server error', error });
+//   }
+// };
 exports.createProduct = async (req, res) => {
   try {
-    const { title, quantity, price, description } = req.body;
-    const userId = req.user.id; // 👈 Requires auth middleware
+
+    const { title, category, quantity, price, description } = req.body;
+    const userId = req.user.id;
 
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ message: 'At least one image is required' });
@@ -13,7 +65,9 @@ exports.createProduct = async (req, res) => {
 
     const uploadPromises = req.files.map(file => {
       return new Promise((resolve, reject) => {
+
         const ext = file.originalname.split('.').pop();
+
         const publicId = `product-${Date.now()}-${Math.floor(Math.random() * 10000)}.${ext}`;
 
         const stream = cloudinary.uploader.upload_stream(
@@ -23,36 +77,59 @@ exports.createProduct = async (req, res) => {
             resource_type: 'image'
           },
           (err, result) => {
+
             if (err) reject(err);
             else resolve(result.secure_url);
+
           }
         );
 
         stream.end(file.buffer);
+
       });
     });
 
     const imageUrls = await Promise.all(uploadPromises);
+
     const imageUrlString = imageUrls.join(',');
 
     const sql = `
-      INSERT INTO products (title, quantity, price, description, images, user_id)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO products
+      (title, category, quantity, price, description, images, user_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
-    const [result] = await db.query(sql, [title, quantity, price, description, imageUrlString, userId]);
+    const [result] = await db.query(sql, [
+      title,
+      category,
+      quantity,
+      price,
+      description,
+      imageUrlString,
+      userId
+    ]);
 
-    return res.status(201).json({
+    res.status(201).json({
+
       message: 'Product created successfully',
       productId: result.insertId,
       imageUrls
+
     });
 
   } catch (error) {
-    console.error('Error creating product:', error);
-    return res.status(500).json({ message: 'Internal server error', error });
+
+    console.error(error);
+
+    res.status(500).json({
+
+      message: 'Internal server error'
+
+    });
+
   }
 };
+
 
 // ✅ Get products added by logged-in user
 exports.getMyProducts = async (req, res) => {
