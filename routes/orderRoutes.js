@@ -3,6 +3,8 @@ const router = express.Router();
 const orderController = require('../controllers/orderController');
 
 router.post('/orders', orderController.createOrder);
+router.get('/orders', orderController.getAllOrders);
+router.get('/orders/user/:userId', orderController.getOrdersByUser);
 router.post('/payments/update-status', orderController.updatePaymentStatus);
 router.post('/orders/update-stock', orderController.updateStock);
 

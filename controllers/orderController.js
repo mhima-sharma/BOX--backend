@@ -231,3 +231,103 @@ exports.updateStock = async (req, res) => {
     }
 };
 
+exports.getAllOrders = async (req, res) => {
+    try {
+        const [orders] = await db.query(`
+            SELECT 
+                o.id,
+                o.user_id,
+                o.total_amount,
+                o.payment_method,
+                o.payment_status
+            FROM orders o
+            ORDER BY o.id DESC
+        `);
+
+        const formattedOrders = await Promise.all(
+            orders.map(async (order) => {
+                const [billingRows] = await db.query(
+                    `SELECT full_name, email, phone, shipping_address
+                     FROM order_billing_details
+                     WHERE order_id = ?`,
+                    [order.id]
+                );
+
+                const [itemRows] = await db.query(
+                    `SELECT product_name, quantity, price
+                     FROM order_items
+                     WHERE order_id = ?`,
+                    [order.id]
+                );
+
+                return {
+                    ...order,
+                    billingDetails: billingRows[0] || null,
+                    items: itemRows
+                };
+            })
+        );
+
+        return res.status(200).json({
+            message: 'All orders fetched successfully',
+            count: formattedOrders.length,
+            orders: formattedOrders
+        });
+    } catch (error) {
+        console.error('Get All Orders Error:', error.message);
+        return res.status(500).json({ error: 'Failed to fetch orders' });
+    }
+};
+
+exports.getOrdersByUser = async (req, res) => {
+    const { userId } = req.params;
+
+    try {
+        const [orders] = await db.query(`
+            SELECT 
+                o.id,
+                o.user_id,
+                o.total_amount,
+                o.payment_method,
+                o.payment_status
+            FROM orders o
+            WHERE o.user_id = ?
+            ORDER BY o.id DESC
+        `, [userId]);
+
+        const formattedOrders = await Promise.all(
+            orders.map(async (order) => {
+                const [billingRows] = await db.query(
+                    `SELECT full_name, email, phone, shipping_address
+                     FROM order_billing_details
+                     WHERE order_id = ?`,
+                    [order.id]
+                );
+
+                const [itemRows] = await db.query(
+                    `SELECT product_name, quantity, price
+                     FROM order_items
+                     WHERE order_id = ?`,
+                    [order.id]
+                );
+
+                return {
+                    ...order,
+                    billingDetails: billingRows[0] || null,
+                    items: itemRows
+                };
+            })
+        );
+
+        return res.status(200).json({
+            message: 'User orders fetched successfully',
+            userId,
+            count: formattedOrders.length,
+            orders: formattedOrders
+        });
+    } catch (error) {
+        console.error('Get Orders By User Error:', error.message);
+        return res.status(500).json({ error: 'Failed to fetch user orders' });
+    }
+};
+
