@@ -31,6 +31,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api', orderRoutes);
+app.use('/', orderRoutes);
 app.use('/api/ai', chatgptRoutes);
 app.use('/api', paidOrdersRoutes);
 
